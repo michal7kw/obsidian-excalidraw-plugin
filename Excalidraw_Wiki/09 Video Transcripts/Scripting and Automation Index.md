@@ -1,0 +1,20 @@
+---
+title: Scripting and Automation Index
+source: https://excalidraw-obsidian.online/WIKI/09%20Video%20Transcripts/Scripting%20and%20Automation%20Index.md
+---
+
+- [[Build a Searchable Icon Library in Obsidian With Bases.md|Build a Searchable Icon Library in Obsidian With Bases]]
+- [[Obsidian Excalidraw 2.13_ Complete Control Over Auto-Export Location & Type.md|Obsidian Excalidraw 2.13: Complete Control Over Auto-Export Location & Type]]
+- [[Techno-Visual PKM Community Launch Session Recording.md|Techno-Visual PKM Community Launch Session Recording]]
+- [[Turn any YouTube Channel into your AI Mentor - Obsidian is the ultimate automation workbench for PKM]]
+- [[Shade Master - Obsidian-Excalidraw 2.7.3 - Recolor SVGs and Excalidraw Drawings.md|Shade Master - Obsidian-Excalidraw 2.7.3 - Recolor SVGs and Excalidraw Drawings]]
+- [[Techno-Visual PKM Community Pilot Kick-Off 2024 November]]
+- [[Excalidraw Scripting - How to Automate On-File-Open Actions in Obsidian.md|Excalidraw Scripting - How to Automate On-File-Open Actions in Obsidian]]
+- [[Excalidraw Script Engine Coding Example Building a Gallery View|Excalidraw Script Engine Coding Example: Building a Gallery View]]
+- [[Excalidraw Scripting - Daily Quote Illustrations in Obsidian with Templater, Excalidraw and OpenAI]]
+- [[A Prezi like presentation experience with Obsidian, Excalidraw and Templater|A "Prezi" like presentation experience with Obsidian, Excalidraw and Templater]]
+- [[Build a sketch-note slideshow with Obsidian, Excalidraw and QuickAdd.md|Build a sketch-note slideshow with Obsidian, Excalidraw and QuickAdd]]
+- [[Ultimate Automation with QuickAdd - a final look at the Clothesline method.md|Ultimate Automation with QuickAdd - a final look at the Clothesline method]]
+- [[The Clothesline Method Part 2_ Improved Automation with Obsidian-Excalidraw 1.3.0.md|The Clothesline Method Part 2: Improved Automation with Obsidian-Excalidraw 1.3.0]]
+- [[The Clothesline Method Part 1_ Detailed automation case study with Obsidian-Excalidraw.md|The Clothesline Method Part 1: Detailed automation case study with Obsidian-Excalidraw]]
+- [[Colorful Second Brain - Part 4 - Scripting Color with Color Master in the Obsidian Excalidraw plugin|Colorful Second Brain - Part 4: Scripting Color with Color Master in the Obsidian Excalidraw plugin]]

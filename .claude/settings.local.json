@@ -8,7 +8,8 @@
       "mcp__plugin_serena_serena__find_symbol",
       "mcp__plugin_serena_serena__search_for_pattern",
       "Read(//d D:/Github/LEARNING/**)",
-      "Bash(wc -l src/view/managers/*.ts src/view/components/**/*.tsx)"
+      "Bash(wc -l src/view/managers/*.ts src/view/components/**/*.tsx)",
+      "Bash(wc:*)"
     ]
   }
 }

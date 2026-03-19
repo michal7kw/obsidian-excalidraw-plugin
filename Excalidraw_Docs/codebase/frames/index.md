@@ -1,0 +1,27 @@
+---
+title: Frames
+source: https://docs.excalidraw.com/docs/codebase/frames
+---
+
+# Frames
+
+## Ordering[​](#ordering "Direct link to heading")
+
+Frames should be ordered where frame children come first, followed by the frame element itself:
+
+```
+[  
+  other_element,  
+  frame1_child1,  
+  frame1_child2,  
+  frame1,  
+  other_element,  
+  frame2_child1,  
+  frame2_child2,  
+  frame2,  
+  other_element,  
+  ...  
+]
+```
+
+If not ordered correctly, the editor will still function, but the elements may not be rendered and clipped correctly. Further, the renderer relies on this ordering for performance optimizations.

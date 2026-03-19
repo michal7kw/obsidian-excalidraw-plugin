@@ -2907,6 +2907,248 @@ ea.targetView                              -> ExcalidrawView
 
 ---
 
+## Part 13: Using the ElementSkeleton API in Scripts
+
+The core Excalidraw library provides a simplified API called `ExcalidrawElementSkeleton` for creating elements programmatically. This API dramatically simplifies element creation -- instead of manually setting 20+ properties on each element, you create "skeletons" with only the minimum required properties and let the library fill in the defaults.
+
+### Accessing the Skeleton API
+
+In Excalidraw plugin scripts, the conversion function is available via the `excalidrawLib` global:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+```
+
+The function signature:
+
+```javascript
+convertToExcalidrawElements(
+  elements: ExcalidrawElementSkeleton[],
+  opts?: { regenerateIds: boolean }  // default: { regenerateIds: true }
+): ExcalidrawElement[]
+```
+
+By default, element IDs are regenerated regardless of whether you pass an `id` property. Set `regenerateIds: false` if you need to preserve specific IDs (for example, when creating arrow bindings that reference other elements by ID).
+
+### Side-by-Side Comparison: Traditional EA vs. Skeleton
+
+**Traditional EA approach** -- verbose, requires setting style properties and manually managing bindings:
+
+```javascript
+ea.style.strokeColor = "#000000";
+ea.style.backgroundColor = "#ffffff";
+ea.style.fillStyle = "solid";
+const rectId = ea.addRect(0, 0, 200, 100);
+const textId = ea.addText(10, 30, "Hello");
+// No automatic binding between text and rect -- must use addText with box option
+```
+
+**Skeleton approach** -- concise, automatic binding via `label` property:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+const elements = convertToExcalidrawElements([
+  {type: "rectangle", x: 0, y: 0, width: 200, height: 100,
+   backgroundColor: "#ffffff", fillStyle: "solid",
+   label: {text: "Hello"}} // Text automatically bound!
+]);
+```
+
+The Skeleton API handles container-to-text binding automatically when you use the `label` property. If you omit width/height on a container with a label, the dimensions are auto-calculated to fit the text.
+
+### Practical Example 1: Text Containers
+
+Create shapes with embedded labels -- rectangles, ellipses, and diamonds all support the `label` property:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+const elements = convertToExcalidrawElements([
+  {
+    type: "rectangle",
+    x: 0, y: 0,
+    label: { text: "Rectangle Label" },
+  },
+  {
+    type: "ellipse",
+    x: 250, y: 0,
+    width: 200, height: 100,
+    backgroundColor: "#ffc9c9",
+    fillStyle: "solid",
+    label: {
+      text: "Styled Ellipse",
+      strokeColor: "#c2255c",
+      fontSize: 20,
+    },
+  },
+  {
+    type: "diamond",
+    x: 500, y: 0,
+    width: 200,
+    backgroundColor: "#fff3bf",
+    strokeWidth: 2,
+    label: {
+      text: "Diamond Label",
+      strokeColor: "#099268",
+      textAlign: "left",
+      verticalAlign: "top",
+    },
+  },
+]);
+```
+
+### Practical Example 2: Labeled Arrows
+
+Arrows also support the `label` property to create arrows with text attached at the midpoint:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+const elements = convertToExcalidrawElements([
+  {
+    type: "arrow",
+    x: 100, y: 100,
+    label: { text: "Step 1" },
+  },
+  {
+    type: "arrow",
+    x: 100, y: 200,
+    strokeColor: "#1098ad",
+    strokeWidth: 2,
+    label: {
+      text: "Styled Arrow Label",
+      strokeColor: "#099268",
+      fontSize: 20,
+    },
+  },
+]);
+```
+
+### Practical Example 3: Bound Arrows Connecting Elements
+
+To bind an arrow to shapes, specify `start` and `end` properties. You can reference elements by `type` (creates a new shape) or by `id` (binds to an existing element):
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+
+// Create an arrow with auto-generated start and end shapes
+const elements1 = convertToExcalidrawElements([
+  {
+    type: "arrow",
+    x: 255, y: 239,
+    label: { text: "connects" },
+    start: { type: "rectangle" },
+    end: { type: "ellipse" },
+  },
+]);
+
+// Bind multiple arrows to existing shapes using id references
+const elements2 = convertToExcalidrawElements([
+  {
+    type: "ellipse",
+    id: "target-1",
+    x: 390, y: 356,
+    width: 150, height: 150,
+    backgroundColor: "#d8f5a2",
+  },
+  {
+    type: "diamond",
+    id: "source-1",
+    x: -30, y: 380,
+  },
+  {
+    type: "arrow",
+    x: 100, y: 440,
+    width: 295,
+    start: {
+      type: "rectangle",
+      width: 150, height: 150,
+    },
+    end: { id: "target-1" },
+  },
+  {
+    type: "arrow",
+    x: 60, y: 420,
+    width: 330,
+    start: { id: "source-1" },
+    end: { id: "target-1" },
+  },
+], { regenerateIds: false }); // Must preserve IDs for bindings to work
+```
+
+Note that when using `id` references, you must pass `{ regenerateIds: false }` so that the IDs you specify are preserved.
+
+### Practical Example 4: Frames with Children
+
+To create a frame containing elements, specify element IDs and reference them in the frame's `children` array:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+const elements = convertToExcalidrawElements([
+  {
+    type: "rectangle",
+    x: 10, y: 10,
+    strokeWidth: 2,
+    id: "rect-1",
+  },
+  {
+    type: "diamond",
+    x: 120, y: 20,
+    backgroundColor: "#fff3bf",
+    strokeWidth: 2,
+    label: {
+      text: "HELLO EXCALIDRAW",
+      strokeColor: "#099268",
+      fontSize: 30,
+    },
+    id: "diamond-1",
+  },
+  {
+    type: "frame",
+    children: ["rect-1", "diamond-1"],
+    name: "My Frame",
+  },
+], { regenerateIds: false });
+```
+
+### The `regenerateIds` Option
+
+By default, `convertToExcalidrawElements` regenerates all element IDs. This is the safe default because it prevents ID collisions when creating elements multiple times.
+
+However, you **must** set `{ regenerateIds: false }` when:
+- Using `id` references in arrow `start`/`end` bindings
+- Using `id` references in frame `children` arrays
+- You need deterministic IDs for any other reason
+
+### When to Use Skeleton vs. Traditional EA API
+
+| Scenario | Recommended API | Reason |
+|----------|----------------|--------|
+| Creating complex connected diagrams (arrows bound to shapes) | Skeleton | Automatic binding setup is much simpler |
+| Text containers (shapes with labels) | Either | EA's `addText({box: true})` is also convenient |
+| Simple element creation with EA style reuse | Traditional EA | If you already set `ea.style`, just use `addRect()` etc. |
+| Batch creation of many elements from data | Skeleton | Declarative array format maps well to data-driven generation |
+| Modifying existing elements | Traditional EA | Skeleton is for creation only; use `copyViewElementsToEAforEditing()` for edits |
+| Adding elements to the view | Traditional EA | After Skeleton creation, you still need `ea.copyViewElementsToEAforEditing(elements)` then `ea.addElementsToView()` |
+
+### Integrating Skeleton Elements with the EA Workbench
+
+The Skeleton API returns raw Excalidraw elements, not elements in the EA workbench. To add them to a view:
+
+```javascript
+const {convertToExcalidrawElements} = excalidrawLib;
+const elements = convertToExcalidrawElements([
+  {type: "rectangle", x: 0, y: 0, width: 200, height: 100,
+   label: {text: "New Box"}},
+]);
+
+// Copy the skeleton-created elements into EA's workbench
+ea.copyViewElementsToEAforEditing(elements);
+
+// Commit to the view
+await ea.addElementsToView(true, true);
+```
+
+---
+
 ## Source File References
 
 The key source files for understanding the script API:

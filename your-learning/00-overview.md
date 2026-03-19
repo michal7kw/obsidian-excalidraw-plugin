@@ -493,7 +493,8 @@ reading order. Each step builds on the previous.
 | 11 | Contributing guide | How to set up dev environment and contribute PRs |
 | 12 | Custom scripts guide | `12-custom-scripts-guide.md` -- hands-on script creation |
 | 13 | Working with SVG | `13-working-with-svg.md` -- SVG export, import, color mapping |
-| 14 | Advanced topics | Edge cases: multi-window, PDF embeds, CJK fonts, sync conflicts |
+| 14 | Excalidraw library API | `14-excalidraw-library-api.md` -- Core Excalidraw library API (ElementSkeleton, ExcalidrawAPI, export utilities, JSON schema) |
+| 15 | Advanced topics | Edge cases: multi-window, PDF embeds, CJK fonts, sync conflicts |
 
 ### Suggested Source File Reading Order
 
@@ -961,6 +962,14 @@ Excalidraw-Obsidian Wiki documentation. This includes:
 The Wiki content supplements the source-code-derived learning materials in this
 directory. Where this guide explains *how the code works*, the Wiki explains
 *how to use the features* from an end-user and script-author perspective.
+
+Additionally, `Excalidraw_Docs/` in the repository root contains the core library
+API documentation from the `@excalidraw/excalidraw` npm package. This covers the
+ElementSkeleton API for programmatic element creation, the ExcalidrawAPI imperative
+interface, export utilities (`exportToSvg`, `exportToBlob`, `exportToCanvas`,
+`exportToClipboard`), and the JSON scene schema. These docs are the upstream
+reference for the library-level functions accessible via `excalidrawLib` in plugin
+scripts.
 
 ---
 

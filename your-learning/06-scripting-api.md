@@ -1359,10 +1359,117 @@ sequenceDiagram
 
 ---
 
+---
+
+## Section 9: Accessing the Underlying Excalidraw Library
+
+Beyond the `ea` workbench API, scripts can access two lower-level interfaces that expose the full power of the Excalidraw library:
+
+1. **`ea.getExcalidrawAPI()`** -- returns the imperative React API for the current view (the same API the Excalidraw React component exposes via its `excalidrawAPI` callback prop)
+2. **`excalidrawLib`** global -- the Excalidraw library module with utility functions for element conversion, export, serialization, and coordinate math
+
+### ExcalidrawAPI Methods (via `ea.getExcalidrawAPI()`)
+
+The imperative API provides direct scene access and control. It is defined at line 2675 of `ExcalidrawAutomate.ts`.
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `getSceneElements()` | `ExcalidrawElement[]` | All non-deleted elements in the scene |
+| `getSceneElementsIncludingDeleted()` | `ExcalidrawElement[]` | All elements including deleted ones |
+| `getAppState()` | `AppState` | Current application state (zoom, scroll, theme, colors, etc.) |
+| `getFiles()` | `BinaryFiles` | All embedded files (images, PDFs) in the scene |
+| `updateScene({elements?, appState?, captureUpdate?})` | `void` | Update scene state directly |
+| `addFiles(files)` | `void` | Add image file data to the scene |
+| `resetScene({resetLoadingState?})` | `void` | Clear everything from the scene |
+| `scrollToContent(target?, opts?)` | `void` | Navigate viewport to fit elements |
+| `setActiveTool({type, locked?})` | `void` | Change the active drawing tool |
+| `setToast({message, closable?, duration?})` | `void` | Show a notification toast |
+| `setCursor(cursor)` | `void` | Customize the mouse cursor on the canvas |
+| `resetCursor()` | `void` | Reset to default mouse cursor |
+| `toggleSidebar({name, tab?, force?})` | `boolean` | Toggle a UI sidebar on/off |
+| `history.clear()` | `void` | Clear the undo/redo history |
+| `onChange(callback)` | `() => void` | Subscribe to scene change events; returns unsubscribe function |
+| `onPointerDown(callback)` | `() => void` | Subscribe to canvas pointer-down events; returns unsubscribe function |
+| `onPointerUp(callback)` | `() => void` | Subscribe to canvas pointer-up events; returns unsubscribe function |
+
+The `captureUpdate` parameter on `updateScene` controls undo/redo behavior:
+- `CaptureUpdateAction.IMMEDIATELY` -- update is immediately undoable (default for most local changes)
+- `CaptureUpdateAction.EVENTUALLY` -- update will eventually be captured (for multi-step async operations)
+- `CaptureUpdateAction.NEVER` -- update is never recorded in history (for remote updates, initialization)
+
+### excalidrawLib Utilities
+
+The `excalidrawLib` global provides access to functions from the `@zsviczian/excalidraw` package. Key categories:
+
+**Element Creation:**
+- `convertToExcalidrawElements(skeletons, opts?)` -- convert ElementSkeleton arrays to full elements (see Part 13 of `12-custom-scripts-guide.md`)
+
+**Export:**
+- `exportToSvg({elements, appState, files, exportPadding?})` -- export scene to SVG DOM element
+- `exportToBlob({elements, appState, files, mimeType?, quality?, getDimensions?})` -- export to image Blob
+- `exportToCanvas({elements, appState, files, getDimensions?, maxWidthOrHeight?})` -- export to Canvas element
+- `exportToClipboard({elements, appState, files, type})` -- copy to system clipboard
+
+**Data Validation and Restoration:**
+- `restoreElements(elements, localElements?)` -- validate and restore element data
+- `restoreAppState(appState, localAppState?)` -- validate and restore app state
+
+**Serialization:**
+- `serializeAsJSON(elements, appState, files, type)` -- serialize scene to JSON string
+
+**Coordinate Conversion:**
+- `sceneCoordsToViewportCoords({sceneX, sceneY}, appState)` -- convert scene coordinates to viewport
+- `viewportCoordsToSceneCoords({clientX, clientY}, appState)` -- convert viewport to scene coordinates
+
+**Geometry and Queries:**
+- `getCommonBounds(elements)` -- compute bounding box of element set
+- `isLinearElement(element)` -- check if element is a line or arrow
+- `getNonDeletedElements(elements)` -- filter out deleted elements
+
+### Script Example: Subscribing to Scene Changes
+
+```javascript
+const api = ea.getExcalidrawAPI();
+
+// Subscribe to all scene changes
+const unsubscribe = api.onChange((elements, appState, files) => {
+  console.log(`Scene has ${elements.length} elements`);
+  console.log(`Current zoom: ${appState.zoom.value}`);
+});
+
+// Later, when done listening:
+// unsubscribe();
+```
+
+### Script Example: Using Library Utilities
+
+```javascript
+// Get the bounding box of selected elements
+const selected = ea.getViewSelectedElements();
+if (selected.length > 0) {
+  const bounds = excalidrawLib.getCommonBounds(selected);
+  console.log(`Bounds: [${bounds[0]}, ${bounds[1]}] to [${bounds[2]}, ${bounds[3]}]`);
+}
+
+// Convert viewport mouse position to scene coordinates
+const api = ea.getExcalidrawAPI();
+const appState = api.getAppState();
+const scenePos = excalidrawLib.viewportCoordsToSceneCoords(
+  { clientX: 500, clientY: 300 },
+  appState
+);
+console.log(`Scene position: (${scenePos.x}, ${scenePos.y})`);
+```
+
+See `14-excalidraw-library-api.md` for the complete library API reference.
+
+---
+
 ## Cross-References
 
 - Script execution model and the `utils` object: `07-script-engine-and-patterns.md`
 - Hook system and event integration: `08-hooks-and-integration.md`
+- Core Excalidraw library API reference: `14-excalidraw-library-api.md`
 - Source file: `src/shared/ExcalidrawAutomate.ts` (4077 lines)
 - Script engine: `src/shared/Scripts.ts`
 - Entry point for external consumers: `src/core/index.ts`

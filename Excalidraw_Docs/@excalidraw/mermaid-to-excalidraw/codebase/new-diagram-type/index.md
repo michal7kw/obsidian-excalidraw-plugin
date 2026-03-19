@@ -1,0 +1,56 @@
+---
+title: Adding a new Diagram Type
+source: https://docs.excalidraw.com/docs/@excalidraw/mermaid-to-excalidraw/codebase/new-diagram-type
+---
+
+# Adding a new Diagram Type
+
+To add a new diagram type to the parser you can follow the below steps 👇
+
+All the code for the parser resides in [`src`](https://github.com/excalidraw/mermaid-to-excalidraw/tree/master/src) folder and for playground resides in [`playground`](https://github.com/excalidraw/mermaid-to-excalidraw/tree/master/playground) folder.
+
+lets run the playground server in local 👇
+
+```
+yarn start
+```
+
+This will start the playground server in port `1234` and open it in browser so you start playing with the playground.
+
+## Update Supported Diagram Types[​](#update-supported-diagram-types "Direct link to heading")
+
+First step is to add the new diagram type in [`SUPPORTED_DIAGRAM_TYPES`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/src/constants.ts#L2).
+
+Once this is done the new diagram type won't be rendered as an image but start throwing error since we don't support parsing the data yet.
+
+## Writing the Diagram Parser[​](#writing-the-diagram-parser "Direct link to heading")
+
+Once the diagram type is added in previous step. Next step is to write the parser to parse the mermaid diagram.
+
+For this create a file named `{{diagramType}}.ts` in [`src/parser`](https://github.com/excalidraw/mermaid-to-excalidraw/tree/master/src/parser) and write a function `parseMermaid{{diagramType}}Diagram` similar to how we [`parseMermaidFlowChartDiagram`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/src/parser/flowchart.ts#L256) for parsing flowchart diagram.
+
+The main aim of the parser is 👇
+
+1. Determine how elements are connected in the diagram and thus finding arrow and text bindings.
+
+For this you might have to dig in to the parser `diagram.parser.yy` and which attributes to parse for the new diagram.
+
+2. Determine the position and dimensions of each element, for this would be using the `svg`
+
+Once the parser is ready, lets start using it.
+
+Add the diagram type in switch case in [`parseMermaid`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/src/parseMermaid.ts#L97) and call the parser for the same.
+
+## Writing the Excalidraw Skeleton Convertor[​](#writing-the-excalidraw-skeleton-convertor "Direct link to heading")
+
+With the completion of previous step, we have all the data, now we need to transform it so to [ExcalidrawElementSkeleton](https://github.com/excalidraw/excalidraw/blob/master/packages/excalidraw/data/transform.ts#L133) format.
+
+Similar to [`FlowChartToExcalidrawSkeletonConverter`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/src/converter/types/flowchart.ts#L24), you have to write the `{{diagramType}}ToExcalidrawSkeletonConverter` which parses the data received in previous step and returns the [ExcalidrawElementSkeleton](https://github.com/excalidraw/excalidraw/blob/master/packages/excalidraw/data/transform.ts#L133).
+
+Thats it, you have added the new diagram type 🥳, now lets test it out!
+
+## Updating the Playground[​](#updating-the-playground "Direct link to heading")
+
+1. Create a file named `{{diagramType}}.ts` in [`playround/testcases/`](https://github.com/excalidraw/mermaid-to-excalidraw/tree/master/playground/testcases). For reference you can check [`flowchart.ts`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/playground/testcases/flowchart.ts).
+2. Incase the new diagram type added is present in [`unsupported.ts`](https://github.com/excalidraw/mermaid-to-excalidraw/blob/master/playground/testcases/unsupported.ts) then remove it from there.
+3. Verify if the test cases are running fine in playground.

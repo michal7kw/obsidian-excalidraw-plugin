@@ -1,0 +1,267 @@
+---
+title: Footer
+source: https://docs.excalidraw.com/docs/@excalidraw/excalidraw/api/children-components/footer
+---
+
+# Footer
+
+Earlier we were using `renderFooter` prop to render custom footer which was removed in [#5970](https://github.com/excalidraw/excalidraw/pull/5970). Now you can pass a `Footer` component instead to render the custom UI for footer.
+
+You will need to import the `Footer` component from the package and wrap your component with the Footer component. The `Footer` should be a valid React Node.
+
+**Usage**
+
+Live Editor
+
+function App() {
+return (
+<div style={{ height: "500px" }}>
+<Excalidraw>
+<Footer>
+<button
+className="custom-footer"
+onClick={() => alert("This is dummy footer")}
+>
+custom footer
+</button>
+</Footer>
+</Excalidraw>
+</div>
+);
+}
+
+```
+function App() {
+
+
+
+return (
+
+
+
+<div style={{ height: "500px" }}>
+
+
+
+<Excalidraw>
+
+
+
+<Footer>
+
+
+
+<button
+
+
+
+className="custom-footer"
+
+
+
+onClick={() => alert("This is dummy footer")}
+
+
+
+>
+
+
+
+custom footer
+
+
+
+</button>
+
+
+
+</Footer>
+
+
+
+</Excalidraw>
+
+
+
+</div>
+
+
+
+);
+
+
+
+}
+```
+
+Result
+
+Loading...
+
+This will only work for `Desktop` devices.
+
+For `mobile` you will need to render it inside the [MainMenu](#mainmenu). You can use the [`useEditorInterface`](#useEditorInterface) hook to check the type of device, this will be available only inside the `children` of `Excalidraw` component.
+
+Open the `Menu` in the below playground and you will see the `custom footer` rendered.
+
+Live Editor
+
+const MobileFooter = ({}) => {
+const editorInterface = useEditorInterface();
+if (editorInterface.formFactor === "phone") {
+return (
+<Footer>
+<button
+className="custom-footer"
+style={{ marginLeft: "20px", height: "2rem" }}
+onClick={() => alert("This is custom footer in mobile menu")}
+>
+custom footer
+</button>
+</Footer>
+);
+}
+return null;
+};
+const App = () => (
+<div style={{ height: "400px" }}>
+<Excalidraw>
+<MainMenu>
+<MainMenu.Item> Item1 </MainMenu.Item>
+<MainMenu.Item> Item 2 </MainMenu.Item>
+<MobileFooter />
+</MainMenu>
+</Excalidraw>
+</div>
+);
+// Need to render when code is span across multiple components
+// in Live Code blocks editor
+render(<App />);
+
+```
+const MobileFooter = ({}) => {
+
+
+
+const editorInterface = useEditorInterface();
+
+
+
+if (editorInterface.formFactor === "phone") {
+
+
+
+return (
+
+
+
+<Footer>
+
+
+
+<button
+
+
+
+className="custom-footer"
+
+
+
+style={{ marginLeft: "20px", height: "2rem" }}
+
+
+
+onClick={() => alert("This is custom footer in mobile menu")}
+
+
+
+>
+
+
+
+custom footer
+
+
+
+</button>
+
+
+
+</Footer>
+
+
+
+);
+
+
+
+}
+
+
+
+return null;
+
+
+
+};
+
+
+
+const App = () => (
+
+
+
+<div style={{ height: "400px" }}>
+
+
+
+<Excalidraw>
+
+
+
+<MainMenu>
+
+
+
+<MainMenu.Item> Item1 </MainMenu.Item>
+
+
+
+<MainMenu.Item> Item 2 </MainMenu.Item>
+
+
+
+<MobileFooter />
+
+
+
+</MainMenu>
+
+
+
+</Excalidraw>
+
+
+
+</div>
+
+
+
+);
+
+
+
+// Need to render when code is span across multiple components
+
+
+
+// in Live Code blocks editor
+
+
+
+render(<App />);
+```
+
+Result
+
+Loading...

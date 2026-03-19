@@ -1935,3 +1935,148 @@ When caching is enabled, blob URLs are stored in the cache and revoked when the 
 | `src/types/embeddedFileLoaderTypes.ts` | `ColorMap`, `MimeType`, `Size` |
 | `src/constants/constants.ts` | `FRONTMATTER_KEYS`, `THEME_FILTER` |
 | `src/shared/ExcalidrawData.ts` | `AutoexportPreference` enum |
+
+---
+
+## Part 12: Library-Level Export Utilities
+
+The core Excalidraw library provides lower-level export functions beyond the `ea.createSVG()` / `ea.createPNG()` wrappers documented above. These functions are accessible via the `excalidrawLib` global in the plugin context (see `14-excalidraw-library-api.md` for the full library API reference).
+
+### `exportToSvg`
+
+```javascript
+await excalidrawLib.exportToSvg({
+  elements,       // ExcalidrawElement[]
+  appState,       // AppState (export flags live here)
+  files,          // BinaryFiles (embedded images)
+  exportPadding,  // number (default: 10)
+});
+// Returns: SVGSVGElement
+```
+
+This is the function that `ea.createSVG()` ultimately calls under the hood (via `getSVG()` in `src/utils/utils.ts`). Using it directly gives you more control over the SVG DOM element returned, without the template loading, block reference handling, and link conversion that EA's wrapper adds.
+
+### `exportToBlob`
+
+```javascript
+await excalidrawLib.exportToBlob({
+  elements,       // ExcalidrawElement[]
+  appState,       // AppState
+  files,          // BinaryFiles
+  mimeType,       // string: "image/png" (default), "image/jpeg", "image/webp"
+  quality,        // number: 0-1 (default: 0.92), only for JPEG/WebP
+  exportPadding,  // number (default: 10)
+  getDimensions,  // (width, height) => {width, height, scale?}
+});
+// Returns: Blob
+```
+
+Generates a raster image Blob. The `mimeType` parameter controls the output format -- PNG (default), JPEG, or WebP. The `quality` parameter (0 to 1) applies only to lossy formats (JPEG, WebP). The optional `getDimensions` callback lets you compute custom output dimensions and scale from the natural content dimensions.
+
+### `exportToCanvas`
+
+```javascript
+await excalidrawLib.exportToCanvas({
+  elements,           // ExcalidrawElement[]
+  appState,           // AppState
+  files,              // BinaryFiles
+  getDimensions,      // (width, height) => {width, height, scale?}
+  maxWidthOrHeight,   // number (if provided, getDimensions is ignored)
+  exportPadding,      // number (default: 10)
+});
+// Returns: HTMLCanvasElement
+```
+
+Returns a Canvas element for further manipulation (drawing overlays, pixel-level processing, etc.). The `maxWidthOrHeight` parameter constrains the output to fit within a square of that size, which is useful for generating thumbnails.
+
+### `exportToClipboard`
+
+```javascript
+await excalidrawLib.exportToClipboard({
+  elements,   // ExcalidrawElement[]
+  appState,   // AppState
+  files,      // BinaryFiles
+  type,       // "png" | "svg" | "json"
+  mimeType,   // string (for PNG: "image/png" default)
+  quality,    // number (for JPEG/WebP)
+});
+// Returns: void (copies to system clipboard)
+```
+
+Copies the drawing to the system clipboard in the specified format. The `"json"` type copies the full Excalidraw scene data, which can be pasted into another Excalidraw instance.
+
+### AppState Export Flags
+
+All four export functions read their behavior from properties on the `appState` parameter:
+
+| AppState Property | Type | Default | Description |
+|-------------------|------|---------|-------------|
+| `exportBackground` | boolean | `true` | Whether to include the background fill |
+| `viewBackgroundColor` | string | `"#fff"` | The background color to use |
+| `exportWithDarkMode` | boolean | `false` | Whether to render in dark mode |
+| `exportEmbedScene` | boolean | `false` | Whether to embed the full scene JSON in the output (increases size) |
+
+### Script Example: Using Library Exports Directly
+
+```javascript
+const api = ea.getExcalidrawAPI();
+const elements = api.getSceneElements();
+const appState = api.getAppState();
+const files = api.getFiles();
+
+// Export to SVG with explicit settings
+const svg = await excalidrawLib.exportToSvg({
+  elements,
+  appState: {
+    ...appState,
+    exportWithDarkMode: false,
+    exportBackground: true,
+  },
+  files,
+});
+
+// The result is an SVGSVGElement -- full DOM access
+console.log(`SVG dimensions: ${svg.getAttribute("width")} x ${svg.getAttribute("height")}`);
+const svgString = svg.outerHTML;
+await app.vault.create("exports/direct-export.svg", svgString);
+
+// Export to PNG blob with custom dimensions
+const blob = await excalidrawLib.exportToBlob({
+  elements,
+  appState: {
+    ...appState,
+    exportWithDarkMode: false,
+    exportBackground: true,
+  },
+  files,
+  getDimensions: (width, height) => ({
+    width: width * 2,
+    height: height * 2,
+    scale: 2,
+  }),
+});
+
+// Export to Canvas for pixel manipulation
+const canvas = await excalidrawLib.exportToCanvas({
+  elements,
+  appState,
+  files,
+  maxWidthOrHeight: 800,
+});
+const ctx = canvas.getContext("2d");
+ctx.font = "30px Virgil";
+ctx.fillText("Watermark", 10, 30);
+```
+
+### Relationship to `ea.createSVG()` and `ea.createPNG()`
+
+The EA methods (`ea.createSVG()`, `ea.createPNG()`, `ea.createViewSVG()`) are higher-level wrappers that add several features on top of the library export functions:
+
+- **Template loading** -- EA can merge template elements with your scene
+- **Block/section reference handling** -- EA adjusts the SVG viewBox for `#^area=`, `#^group=`, `#^frame=` references
+- **Link conversion** -- EA converts `[[wiki-links]]` to `obsidian://` URLs in exports
+- **Color map application** -- EA applies SVG color remapping for embedded files
+- **Dark mode foreignObject filters** -- EA applies theme filters to embedded markdown content
+- **Embedded file resolution** -- EA loads and resolves vault file references via `EmbeddedFilesLoader`
+
+Use the library functions directly when you need lower-level control, want to bypass the EA pipeline, or are working with elements that are already fully resolved.

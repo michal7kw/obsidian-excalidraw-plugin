@@ -1219,6 +1219,191 @@ new Notice("Done!");
 
 ---
 
+---
+
+## 13. AI-Powered Script Generation
+
+The official Excalidraw Wiki's Developer Docs describe a workflow for using
+large language models to generate Excalidraw scripts automatically.
+
+### The LLM Training File
+
+The plugin author maintains a downloadable training file on GitHub that
+contains:
+
+- The complete ExcalidrawAutomate library documentation
+- Full TypeScript type definitions for the EA API
+- Source code of all community scripts in `ea-scripts/`
+
+This file is designed to be fed directly to an LLM as context so the model
+can generate correct, idiomatic Excalidraw scripts.
+
+### Recommended Workflow
+
+1. **Download** the LLM training file from the Excalidraw GitHub repository.
+2. **Copy** the file content into your LLM session (Google Gemini via AI
+   Studio, Claude, ChatGPT, or similar).
+3. **Describe** the script you want to create in natural language.
+4. **Copy** the generated script into a `.md` file in your vault's scripts
+   folder.
+5. **Test** the script in Excalidraw and iterate with the LLM if needed.
+
+### Video Reference
+
+The Wiki references the video "AI Scripting Superpowers: Create ANY
+Obsidian-Excalidraw Script with Gemini 2.5" which demonstrates this process
+end-to-end, including debugging and refining AI-generated scripts.
+
+---
+
+## 14. Scripting Video Resources
+
+The Excalidraw Wiki maintains an index of video transcripts covering
+scripting topics. These are valuable for understanding real-world script
+development patterns:
+
+- **"Excalidraw Scripting - How to Automate On-File-Open Actions in Obsidian"**
+  Covers the `excalidraw-onload-script` frontmatter key and how to register
+  hooks that run automatically when a drawing opens.
+
+- **"Excalidraw Script Engine Coding Example: Building a Gallery View"**
+  A detailed walkthrough of building a script that navigates vault files,
+  loads images, and creates a visual gallery on the canvas. See Section 15
+  below for a summary.
+
+- **"A detailed walkthrough of the Excalidraw-Obsidian Slideshow 3.0 script"**
+  Covers frame-based presentations, navigation logic, and the slideshow
+  script's architecture.
+
+- **"Colorful Second Brain - Part 4: Scripting Color with Color Master"**
+  Demonstrates how to programmatically manipulate element colors, create
+  color palettes, and build interactive color-picking UI within scripts.
+
+**Full playlist:**
+https://youtube.com/playlist?list=PL6mqgtMZ4NP3up3qjrWW69UwlPow0ZvzU
+
+---
+
+## 15. Gallery View Script -- Real-World Walkthrough
+
+The Wiki's transcript for the Gallery View coding example reveals several
+advanced scripting patterns that go beyond the basic patterns in Sections 5--9.
+
+### Navigating Vault Files Programmatically
+
+The gallery script demonstrates how to enumerate vault files using the
+Obsidian API:
+
+```javascript
+// Get all files in a specific folder
+const folder = app.vault.getAbstractFileByPath("Photos/Daily");
+const files = folder.children
+  .filter(f => f instanceof ea.obsidian.TFile)
+  .filter(f => f.name.match(/^\d{4}-\d{2}-\d{2}/));  // date-prefixed files
+```
+
+### Filtering by Name Pattern and Folder
+
+Scripts commonly filter files by name patterns (regex or string matching)
+and folder paths. The gallery script uses `moment` for date-based filtering:
+
+```javascript
+// Filter to files from the last 7 days
+const cutoff = moment().subtract(7, 'days');
+const recentFiles = files.filter(f => {
+  const dateStr = f.name.substring(0, 10);
+  return moment(dateStr).isAfter(cutoff);
+});
+```
+
+### Loading Images Asynchronously
+
+The `ea.addImage()` method loads images from vault files. For a gallery with
+many images, the script loads them in sequence to avoid overwhelming memory:
+
+```javascript
+let x = 0, y = 0;
+const cols = 4;
+const size = 200;
+
+for (let i = 0; i < recentFiles.length; i++) {
+  await ea.addImage(x, y, recentFiles[i], false);
+  x += size + 10;
+  if ((i + 1) % cols === 0) {
+    x = 0;
+    y += size + 10;
+  }
+}
+
+await ea.addElementsToView(true, true);
+```
+
+### Adding Links to Elements
+
+Each gallery thumbnail can be linked back to its source file:
+
+```javascript
+const id = await ea.addImage(x, y, file, false);
+const el = ea.getElement(id);
+el.link = `[[${file.path}]]`;
+```
+
+### Performance Considerations
+
+The Wiki transcript notes that scripts creating 100+ image elements should:
+
+- Use `addElementsToView(false, false)` (no reposition, no save) during
+  the loop and only call `addElementsToView(false, true)` once at the end.
+- Consider batching operations: create all elements first, then commit once.
+- Be aware that very large galleries may hit browser memory limits due to
+  dataURL encoding of each image.
+
+---
+
+## 16. Templater Integration
+
+The Wiki's Developer Docs describe patterns for integrating Excalidraw
+scripts with Obsidian Templater.
+
+### Template "Cannibalization" Prevention
+
+When a Templater template contains Excalidraw frontmatter
+(`excalidraw-plugin: parsed`), the Excalidraw plugin may try to process the
+template file itself as a drawing, corrupting it. To prevent this:
+
+- Store templates in a folder excluded from Excalidraw processing, or
+- Only add the `excalidraw-plugin` frontmatter key via Templater
+  interpolation so it does not exist in the raw template file.
+
+### Opening Excalidraw After Creation
+
+A common Templater pattern is to create a new file from a template and then
+immediately open it in Excalidraw view. The challenge is that Obsidian's
+metadata cache needs time to index the new file before the toggle command
+works. The recommended approach uses a metadata cache event listener:
+
+```javascript
+// In a Templater template:
+const path = tp.file.path(true);
+
+const handler = (file) => {
+  if (file.path === path) {
+    app.metadataCache.off("changed", handler);
+    app.commands.executeCommandById(
+      "obsidian-excalidraw-plugin:toggle-excalidraw-view"
+    );
+  }
+};
+
+app.metadataCache.on("changed", handler);
+```
+
+This pattern waits for the metadata cache to register the new file's
+frontmatter before attempting to toggle to Excalidraw view, preventing
+race conditions that would cause the toggle to fail silently.
+
+---
+
 ## Cross-References
 
 - Complete EA API reference: `06-scripting-api.md`
@@ -1229,3 +1414,7 @@ new Notice("Done!");
   - `src/core/index.ts` -- `getEA()` entry point (14 lines)
   - `ea-scripts/` -- Community script examples
   - `src/constants/assets/startupScript.md` -- Startup script template
+- Official Wiki resources:
+  - Developer Docs -- LLM training file and AI scripting workflow
+  - Video transcripts -- Gallery View, Slideshow 3.0, Color Master
+  - Scripting playlist: https://youtube.com/playlist?list=PL6mqgtMZ4NP3up3qjrWW69UwlPow0ZvzU

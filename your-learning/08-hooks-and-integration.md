@@ -1682,6 +1682,125 @@ flowchart TD
 
 ---
 
+---
+
+## 11. Command Palette Actions for Script Automation
+
+The Excalidraw Wiki's Command Palette Actions page documents that the plugin
+registers 86+ commands in Obsidian's command palette. These commands can be
+invoked programmatically from scripts and hooks, enabling powerful automation
+chains.
+
+### Executing Commands from Scripts
+
+Any Obsidian command can be executed by its ID:
+
+```javascript
+app.commands.executeCommandById("command-id");
+```
+
+### Key Excalidraw Command IDs
+
+| Command ID | Description |
+|------------|-------------|
+| `obsidian-excalidraw-plugin:scriptengine-store` | Opens the Script Engine Store to install or update community scripts |
+| `obsidian-excalidraw-plugin:insert-image` | Opens the insert image dialog for the active drawing |
+| `obsidian-excalidraw-plugin:insert-md` | Opens the insert markdown file dialog |
+| `obsidian-excalidraw-plugin:save` | Saves the active drawing (also triggers transclusion updates and auto-export) |
+| `obsidian-excalidraw-plugin:toggle-excalidraw-view` | Toggles the active file between Excalidraw view and Markdown view |
+| `obsidian-excalidraw-plugin:convert-text2MD` | Converts selected text elements to embedded markdown files |
+| `obsidian-excalidraw-plugin:export-image` | Opens the export dialog for the active drawing |
+| `obsidian-excalidraw-plugin:insert-link` | Opens the insert link dialog |
+| `obsidian-excalidraw-plugin:insert-LaTeX` | Opens the LaTeX equation editor |
+| `obsidian-excalidraw-plugin:tray-mode` | Toggles tray mode (minimal toolbar) |
+| `obsidian-excalidraw-plugin:fullscreen` | Toggles fullscreen mode |
+| `obsidian-excalidraw-plugin:disable-binding` | Toggles element binding (arrows snap to shapes) |
+| `obsidian-excalidraw-plugin:frame-settings` | Opens frame settings for the selected frame |
+| `obsidian-excalidraw-plugin:reset-image-ar` | Resets the aspect ratio of selected image elements |
+
+### Usage in Scripts
+
+Commands are useful when you want to trigger built-in plugin behavior from a
+script without reimplementing it:
+
+```javascript
+// Save the current drawing, which triggers auto-export and transclusion refresh
+app.commands.executeCommandById("obsidian-excalidraw-plugin:save");
+
+// Open the script store to install community scripts
+app.commands.executeCommandById("obsidian-excalidraw-plugin:scriptengine-store");
+```
+
+Commands can also be chained with delays for complex automation sequences:
+
+```javascript
+// Insert an image, wait for the dialog, then save
+app.commands.executeCommandById("obsidian-excalidraw-plugin:insert-image");
+// The dialog is modal; after user completes it, save:
+setTimeout(() => {
+  app.commands.executeCommandById("obsidian-excalidraw-plugin:save");
+}, 500);
+```
+
+---
+
+## 12. Templater Automation Pattern
+
+The Excalidraw Wiki's Developer Docs describe a specific pattern for
+creating Excalidraw drawings from Templater templates and immediately
+opening them in Excalidraw view.
+
+### The Problem
+
+When Templater creates a new file from a template that contains
+`excalidraw-plugin: parsed` in the frontmatter, there is a race condition:
+the metadata cache may not have indexed the new file's frontmatter by the
+time you try to toggle to Excalidraw view. The toggle command checks the
+metadata cache to determine if a file is an Excalidraw drawing, so it fails
+silently if the cache is stale.
+
+### The Solution
+
+Use the metadata cache's `changed` event to detect when the file has been
+indexed, then execute the toggle command:
+
+```javascript
+// In a Templater template -- open Excalidraw drawing after creation
+const path = tp.file.path(true);
+
+const handler = (file) => {
+  if (file.path === path) {
+    // File has been indexed by the metadata cache
+    app.metadataCache.off("changed", handler);
+    app.commands.executeCommandById(
+      "obsidian-excalidraw-plugin:toggle-excalidraw-view"
+    );
+  }
+};
+
+// Start listening before the file is fully created
+app.metadataCache.on("changed", handler);
+```
+
+### How It Works
+
+1. `tp.file.path(true)` gets the path of the file being created by
+   Templater.
+2. A listener is registered on `app.metadataCache` for the `"changed"`
+   event, which fires whenever Obsidian re-indexes a file's metadata.
+3. When the event fires for the target file, the listener removes itself
+   and executes the Excalidraw toggle command.
+4. The toggle command sees the `excalidraw-plugin` key in the now-indexed
+   frontmatter and switches the view from Markdown to Excalidraw.
+
+This pattern is safe because:
+- If the metadata is already cached (unlikely for a brand-new file), the
+  event fires immediately.
+- If the file creation is delayed, the listener waits patiently.
+- The listener self-removes after firing, preventing duplicate toggles.
+
+---
+
 ## Cross-References
 
 - Complete EA API reference: `06-scripting-api.md`
@@ -1693,3 +1812,6 @@ flowchart TD
   - `src/shared/Scripts.ts` -- Script engine lifecycle (406 lines)
   - `src/core/index.ts` -- `getEA()` entry point
   - `src/constants/assets/startupScript.md` -- Startup script template with all hook signatures
+- Official Wiki resources:
+  - Command Palette Actions page -- full list of 86+ command IDs
+  - Developer Docs -- Templater integration patterns

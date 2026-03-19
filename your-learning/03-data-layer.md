@@ -1052,3 +1052,175 @@ normalizes line endings (`\r\n` -> `\n`).
 - **02-architecture.md**: Overall source layout and key abstractions
 - **04-view-and-react.md**: How ExcalidrawView consumes ExcalidrawData (load/save cycles)
 - **05-build-system.md**: How compression is used at build time for packages
+
+---
+
+## 10. Document Properties -- Complete Reference from Official Wiki
+
+The following table consolidates all frontmatter properties documented in the
+official Excalidraw Wiki's "Document Properties" page. This supplements Section 2
+above by providing user-facing descriptions, valid values, and typical examples
+rather than source-code internals.
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| `excalidraw-plugin` | text | **REQUIRED.** Marks the file as an Excalidraw drawing and sets the text display mode. Values: `parsed`, `raw`, `locked` | `parsed` |
+| `excalidraw-autoexport` | text | Controls automatic export when the file is saved. Values: `none`, `both`, `png`, `svg`. Overrides the global plugin setting for this file. | `svg` |
+| `excalidraw-border-color` | text | Border color used when the drawing is embedded as a markdown note (via `excalidraw-embed-md`). Any valid CSS color. | `SteelBlue` |
+| `excalidraw-css` | text | Custom CSS file applied when the drawing is rendered as a markdown embed. Use a wikilink to a CSS file in the vault. | `"[[my-custom-styles]]"` |
+| `excalidraw-default-mode` | text | Default interaction mode when opening the drawing. Values: `normal`, `zen`, `view` | `view` |
+| `excalidraw-embeddable-theme` | text | Theme applied to embeddable elements (iframes, web views) inside the drawing. Values: `dark`, `light`, `auto`, `default` | `auto` |
+| `excalidraw-export-dark` | checkbox | Whether the auto-exported image uses the dark theme. `true` = dark background, `false` = light. | `true` |
+| `excalidraw-export-embed-scene` | checkbox | Whether the full Excalidraw scene JSON is embedded inside exported SVG files, allowing the SVG to be re-imported. | `false` |
+| `excalidraw-export-padding` | number | Padding in pixels added around the drawing content in exported images. | `5` |
+| `excalidraw-export-pngscale` | number | Scale factor for PNG export. Range roughly 0.5--5. A value of `2` produces a 2x resolution image. | `2` |
+| `excalidraw-export-transparent` | checkbox | Whether the exported image has a transparent background instead of the canvas color. | `true` |
+| `excalidraw-font` | text | Font used when the drawing is rendered as a markdown embed. Built-in values: `Virgil`, `Cascadia`. Can also reference a font file in the vault. | `Virgil` |
+| `excalidraw-font-color` | text | Font color used when the drawing is rendered as a markdown embed. Any valid CSS color. | `SteelBlue` |
+| `excalidraw-link-brackets` | checkbox | Whether `[[` and `]]` brackets are displayed around parsed wiki-links on the canvas. | `true` |
+| `excalidraw-link-prefix` | text | Icon or text prefix shown before internal links in parsed mode. | `"📍"` |
+| `excalidraw-linkbutton-opacity` | number | Opacity of the small link indicator icon on elements that have links. Range 0--1. | `0.5` |
+| `excalidraw-mask` | checkbox | Marks the drawing as an image mask. When `true`, the drawing is used as a clipping mask for embedded content. | `true` |
+| `excalidraw-onload-script` | text | Path to a script file (or inline JavaScript) that executes automatically every time the drawing is opened. | `"[[Scripts/my-script.md]]"` |
+| `excalidraw-open-md` | checkbox | When `true`, the file opens in Obsidian's standard Markdown editor instead of the Excalidraw canvas. | `true` |
+| `excalidraw-embed-md` | checkbox | When `true`, the drawing is embedded as rendered markdown content (the back-of-card area) rather than as an image when transcluded with `![[drawing]]`. | `true` |
+| `excalidraw-url-prefix` | text | Icon or text prefix shown before external URLs in parsed mode. | `"🌐"` |
+
+---
+
+## 11. Hybrid Notes Pattern
+
+The Excalidraw Wiki describes a "hybrid note" pattern that combines a visual
+drawing with traditional markdown text in a single file. This leverages the
+file format's back-of-card area (Section 1.2 above).
+
+### How It Works
+
+A hybrid note has two "sides":
+
+1. **The drawing side** -- the Excalidraw canvas, visible when the file opens
+   in Excalidraw view.
+2. **The markdown side** -- the back-of-card area between the frontmatter
+   closing `---` and the `%%` comment block. This area is regular markdown:
+   headings, lists, code blocks, links, and so on.
+
+### The Back-of-Card Area
+
+Everything between the YAML frontmatter and the `%%` delimiter is the
+back-of-card region. When the file is opened as plain markdown (or in
+reading view), this text is visible. When opened in Excalidraw view, it is
+hidden.
+
+```markdown
+---
+excalidraw-plugin: parsed
+excalidraw-embed-md: true
+---
+
+## My Notes
+
+These notes are visible in markdown view and when the drawing is
+embedded with `![[drawing]]` (because `excalidraw-embed-md` is set).
+
+- Key insight one
+- Key insight two
+- Related: [[Other Note]]
+
+#
+%%
+# Excalidraw Data
+...
+%%
+```
+
+### Controlling Embed Behavior
+
+- **`excalidraw-embed-md: true`** -- When this file is transcluded with
+  `![[drawing]]`, Obsidian renders the markdown back-of-card content instead
+  of an image of the drawing.
+- **Force image rendering** -- Even with `excalidraw-embed-md: true`, you can
+  force image rendering for a specific embed by appending `#^as-image`:
+  ```
+  ![[drawing#^as-image]]
+  ```
+- **Force markdown rendering** -- Conversely, for a drawing without
+  `excalidraw-embed-md`, you can force markdown rendering with `#^as-md`:
+  ```
+  ![[drawing#^as-md]]
+  ```
+
+### Templater Integration
+
+The Wiki describes using Obsidian Templater to automatically create hybrid
+notes. A Templater template can:
+
+1. Generate the frontmatter with `excalidraw-plugin: parsed` and any other
+   desired properties.
+2. Add a back-of-card markdown skeleton (headings, placeholder text).
+3. Include the Excalidraw data sections.
+4. Open the resulting file in Excalidraw view using the command palette
+   toggle (see Section 12 in `08-hooks-and-integration.md`).
+
+**Template "cannibalization" prevention:** The Wiki warns that Excalidraw
+templates can be "cannibalized" if the plugin processes them during creation.
+To prevent this, the template should use Templater's `tp.file.path(true)` to
+get the new file path and then listen for the metadata cache `changed` event
+before toggling to Excalidraw view.
+
+---
+
+## 12. Image Block References
+
+The Excalidraw Wiki documents a powerful feature for embedding specific
+portions of a drawing rather than the entire canvas. These use special block
+reference syntax.
+
+### Reference Types
+
+| Syntax | Description |
+|--------|-------------|
+| `![[drawing#^area=<<element_id>>]]` | Embeds a rectangular area around the specified element. The area is defined by the element's bounding box plus padding. |
+| `![[drawing#^group=<<element_id>>]]` | Embeds all elements in the same group as the specified element. The bounding box covers the entire group. |
+| `![[drawing#^frame=<<element_id\|frame_name>>]]` | Embeds the contents of a named frame. Frame name can be used instead of element ID for readability. Content extends to the frame boundaries. |
+| `![[drawing#^clippedframe=<<element_id\|frame_name>>]]` | Same as frame reference, but content is visually clipped to the frame boundaries. Elements extending outside the frame are cut off. |
+
+### How to Get Element IDs
+
+To obtain the element ID needed for block references:
+
+1. Select the element in the Excalidraw canvas.
+2. Use **Copy Markdown Link** (from the context menu or command palette).
+3. With modifier keys held during copy:
+   - **No modifier**: Copies a standard link to the drawing.
+   - **Ctrl/Cmd**: Copies an `area` reference for the selected element.
+   - **Ctrl/Cmd + Shift**: Copies a `group` reference.
+   - **Alt**: Copies a `frame` reference (if a frame is selected).
+   - **Alt + Shift**: Copies a `clippedframe` reference.
+
+### SVG vs. PNG Differences
+
+Block references behave differently depending on the export format:
+
+- **SVG embeds**: The referenced portion is extracted from the full SVG.
+  Links inside the referenced area remain clickable. Text remains
+  selectable.
+- **PNG embeds**: The referenced portion is rasterized. The entire drawing
+  is rendered first, then cropped to the bounding box. Links and text
+  selectability are lost.
+
+### Example Usage
+
+```markdown
+## Architecture Diagram (full)
+![[system-design.excalidraw.md]]
+
+## Just the Database Layer
+![[system-design.excalidraw.md#^group=db_layer_id]]
+
+## Presentation Slide 3
+![[slides.excalidraw.md#^clippedframe=slide_3|Slide 3]]
+```
+
+Block references update automatically when the source drawing changes,
+making them useful for including specific diagram sections in documentation
+without maintaining separate copies.

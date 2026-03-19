@@ -491,7 +491,9 @@ reading order. Each step builds on the previous.
 | 9 | Hooks & integration | EA hooks, `window.ExcalidrawAutomate`, external plugin API |
 | 10 | Managers reference | Deep dive into each of the 7 managers |
 | 11 | Contributing guide | How to set up dev environment and contribute PRs |
-| 12 | Advanced topics | Edge cases: multi-window, PDF embeds, CJK fonts, sync conflicts |
+| 12 | Custom scripts guide | `12-custom-scripts-guide.md` -- hands-on script creation |
+| 13 | Working with SVG | `13-working-with-svg.md` -- SVG export, import, color mapping |
+| 14 | Advanced topics | Edge cases: multi-window, PDF embeds, CJK fonts, sync conflicts |
 
 ### Suggested Source File Reading Order
 
@@ -941,6 +943,24 @@ public eaInstances = new WeakArray<ExcalidrawAutomate>();
 EA instances are tracked via `WeakArray` (a custom WeakRef-based collection at
 `src/shared/WeakArray.ts`) so they can be cleaned up when no longer referenced,
 preventing memory leaks in long-running sessions.
+
+---
+
+### Official Wiki Documentation
+
+The `Excalidraw_Wiki/` directory in the repository root contains the official
+Excalidraw-Obsidian Wiki documentation. This includes:
+
+- **Document Properties** reference -- all frontmatter keys with descriptions
+- **Developer Docs** -- LLM training file, Templater integration, scripting guides
+- **Video Transcripts** -- searchable text from YouTube tutorial videos covering
+  scripting, the gallery view, slideshow 3.0, color master, and more
+- **Command Palette Actions** -- full list of 86+ registered commands with IDs
+- **Image Block References** -- area, group, frame, and clipped frame embed syntax
+
+The Wiki content supplements the source-code-derived learning materials in this
+directory. Where this guide explains *how the code works*, the Wiki explains
+*how to use the features* from an end-user and script-author perspective.
 
 ---
 
